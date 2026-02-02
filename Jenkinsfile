@@ -22,8 +22,9 @@ pipeline {
             steps {
                 withSonarQubeEnv("${SONARQUBE_ENV}") {
                     sh '''
-                    mvn clean verify sonar:sonar \
-                      -Dsonar.projectKey=java-sonar-demo
+                      mvn clean verify sonar:sonar \
+                      -Dsonar.projectKey=java-sonar-demo \
+                      -Dsonar.projectName="Java Sonar K8s Demo"
                     '''
                 }
             }
@@ -31,7 +32,7 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
+                timeout(time: 3, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -39,7 +40,7 @@ pipeline {
 
         stage('Build & Package') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn package -DskipTests'
             }
         }
 
@@ -55,7 +56,7 @@ pipeline {
             echo '✅ Build, SonarQube analysis, and artifact generation successful!'
         }
         failure {
-            echo '❌ Pipeline failed. Check logs or SonarQube quality gate.'
+            echo '❌ Pipeline failed. Check SonarQube Quality Gate or build logs.'
         }
     }
 }
