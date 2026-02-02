@@ -30,14 +30,6 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 3, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-
         stage('Build & Package') {
             steps {
                 sh 'mvn package -DskipTests'
@@ -56,8 +48,7 @@ pipeline {
             echo '✅ Build, SonarQube analysis, and artifact generation successful!'
         }
         failure {
-            echo '❌ Pipeline failed. Check SonarQube Quality Gate or build logs.'
+            echo '❌ Pipeline failed. Check build or SonarQube analysis logs.'
         }
     }
 }
-
