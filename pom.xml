@@ -16,6 +16,14 @@
         <sonar.projectName>Java Sonar Demo</sonar.projectName>
     </properties>
 
+    <!-- 🔴 REQUIRED FOR NEXUS DEPLOY -->
+    <distributionManagement>
+        <repository>
+            <id>nexus-releases1</id>
+            <url>http://13.126.176.194:32081/repository/maven-releases/</url>
+        </repository>
+    </distributionManagement>
+
     <build>
         <plugins>
 

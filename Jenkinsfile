@@ -30,13 +30,13 @@ pipeline {
             }
         }
 
-        stage('Build & Package') {
+        stage('Build & Deploy to Nexus') {
             steps {
-                sh 'mvn package -DskipTests'
+                sh 'mvn deploy -DskipTests'
             }
         }
 
-        stage('Archive Artifact') {
+        stage('Archive Artifact (Jenkins)') {
             steps {
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
@@ -45,10 +45,11 @@ pipeline {
 
     post {
         success {
-            echo '✅ Build, SonarQube analysis, and artifact generation successful!'
+            echo '✅ SonarQube + Nexus deploy successful!'
         }
         failure {
-            echo '❌ Pipeline failed. Check build or SonarQube analysis logs.'
+            echo '❌ Pipeline failed. Check Jenkins logs.'
         }
     }
 }
+
