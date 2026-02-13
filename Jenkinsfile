@@ -7,6 +7,11 @@ pipeline {
 
     environment {
         SONARQUBE_ENV = 'sonarqube-k8s'
+        AWS_REGION = 'ap-south-1'
+        AWS_ACCOUNT_ID = '831103387233'
+        ECR_REPO = 'java-sonar-demo'
+        IMAGE_TAG = '1.0'
+        ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
     }
 
     stages {
@@ -36,19 +41,41 @@ pipeline {
             }
         }
 
-        stage('Archive Artifact (Jenkins)') {
+        stage('Docker Build') {
             steps {
-                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                sh '''
+                  docker build -t ${ECR_REPO}:${IMAGE_TAG} .
+                '''
+            }
+        }
+
+        stage('Docker Tag') {
+            steps {
+                sh '''
+                  docker tag ${ECR_REPO}:${IMAGE_TAG} \
+                  ${ECR_URI}/${ECR_REPO}:${IMAGE_TAG}
+                '''
+            }
+        }
+
+        stage('Docker Push to ECR') {
+            steps {
+                sh '''
+                  aws ecr get-login-password --region ${AWS_REGION} \
+                  | docker login --username AWS --password-stdin ${ECR_URI}
+
+                  docker push ${ECR_URI}/${ECR_REPO}:${IMAGE_TAG}
+                '''
             }
         }
     }
 
     post {
         success {
-            echo '✅ SonarQube + Nexus deploy successful!'
+            echo '✅ CI + SonarQube + Nexus + Docker + ECR pipeline SUCCESSFUL!'
         }
         failure {
-            echo '❌ Pipeline failed. Check Jenkins logs.'
+            echo '❌ Pipeline failed. Check logs.'
         }
     }
 }
