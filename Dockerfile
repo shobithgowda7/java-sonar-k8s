@@ -1,25 +1,27 @@
 # ---------- Base image ----------
 FROM eclipse-temurin:17-jre-jammy
 
-# ---------- Arguments ----------
-ARG NEXUS_URL=http://13.126.176.194:32081
-ARG REPO=maven-releases
-ARG GROUP_ID=com/example
-ARG ARTIFACT_ID=java-sonar-demo
-ARG VERSION=1.0
+# ---------- Build arguments ----------
+ARG NEXUS_URL
+ARG REPO
+ARG GROUP_ID
+ARG ARTIFACT_ID
+ARG VERSION
+ARG NEXUS_USER
+ARG NEXUS_PASSWORD
 
 # ---------- App directory ----------
 WORKDIR /app
 
-# ---------- Download JAR from Nexus ----------
+# ---------- Download JAR from Nexus (Authenticated) ----------
 RUN apt-get update && apt-get install -y curl && \
-    curl -f \
+    curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -f \
     ${NEXUS_URL}/repository/${REPO}/${GROUP_ID}/${ARTIFACT_ID}/${VERSION}/${ARTIFACT_ID}-${VERSION}.jar \
     -o app.jar && \
     apt-get remove -y curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ---------- Expose application port ----------
+# ---------- Expose app port ----------
 EXPOSE 8080
 
 # ---------- Run application ----------

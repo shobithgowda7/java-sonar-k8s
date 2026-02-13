@@ -7,11 +7,13 @@ pipeline {
 
     environment {
         SONARQUBE_ENV = 'sonarqube-k8s'
-        AWS_REGION = 'ap-south-1'
-        AWS_ACCOUNT_ID = '831103387233'
-        ECR_REPO = 'java-sonar-demo'
-        IMAGE_TAG = '1.0'
-        ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        AWS_REGION    = 'ap-south-1'
+        ECR_REGISTRY  = '831103387233.dkr.ecr.ap-south-1.amazonaws.com'
+        ECR_REPO      = 'java-sonar-demo'
+        NEXUS_URL     = 'http://13.126.176.194:32081'
+        NEXUS_REPO    = 'maven-releases'
+        GROUP_ID      = 'com/example'
+        ARTIFACT_ID  = 'java-sonar-demo'
     }
 
     stages {
@@ -43,36 +45,56 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh '''
-                  docker build -t ${ECR_REPO}:${IMAGE_TAG} .
-                '''
+                script {
+                    def VERSION = sh(
+                        script: "mvn help:evaluate -Dexpression=project.version -q -DforceStdout",
+                        returnStdout: true
+                    ).trim()
+
+                    withCredentials([usernamePassword(
+                        credentialsId: 'nexus-cred',
+                        usernameVariable: 'NEXUS_USER',
+                        passwordVariable: 'NEXUS_PASSWORD'
+                    )]) {
+                        sh """
+                        docker build \
+                          --build-arg NEXUS_URL=${NEXUS_URL} \
+                          --build-arg REPO=${NEXUS_REPO} \
+                          --build-arg GROUP_ID=${GROUP_ID} \
+                          --build-arg ARTIFACT_ID=${ARTIFACT_ID} \
+                          --build-arg VERSION=${VERSION} \
+                          --build-arg NEXUS_USER=${NEXUS_USER} \
+                          --build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} \
+                          -t ${ECR_REPO}:${VERSION} .
+                        """
+                    }
+                }
             }
         }
 
-        stage('Docker Tag') {
+        stage('Docker Tag & Push to ECR') {
             steps {
-                sh '''
-                  docker tag ${ECR_REPO}:${IMAGE_TAG} \
-                  ${ECR_URI}/${ECR_REPO}:${IMAGE_TAG}
-                '''
-            }
-        }
+                script {
+                    def VERSION = sh(
+                        script: "mvn help:evaluate -Dexpression=project.version -q -DforceStdout",
+                        returnStdout: true
+                    ).trim()
 
-        stage('Docker Push to ECR') {
-            steps {
-                sh '''
-                  aws ecr get-login-password --region ${AWS_REGION} \
-                  | docker login --username AWS --password-stdin ${ECR_URI}
+                    sh """
+                    aws ecr get-login-password --region ${AWS_REGION} \
+                      | docker login --username AWS --password-stdin ${ECR_REGISTRY}
 
-                  docker push ${ECR_URI}/${ECR_REPO}:${IMAGE_TAG}
-                '''
+                    docker tag ${ECR_REPO}:${VERSION} ${ECR_REGISTRY}/${ECR_REPO}:${VERSION}
+                    docker push ${ECR_REGISTRY}/${ECR_REPO}:${VERSION}
+                    """
+                }
             }
         }
     }
 
     post {
         success {
-            echo '✅ CI + SonarQube + Nexus + Docker + ECR pipeline SUCCESSFUL!'
+            echo '✅ SonarQube + Nexus + Docker + ECR pipeline SUCCESSFUL!'
         }
         failure {
             echo '❌ Pipeline failed. Check logs.'
