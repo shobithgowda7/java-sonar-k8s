@@ -7,7 +7,7 @@
 
     <groupId>com.example</groupId>
     <artifactId>java-sonar-demo</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -19,7 +19,7 @@
     <!-- 🔴 REQUIRED FOR NEXUS DEPLOY -->
     <distributionManagement>
         <repository>
-            <id>nexus-releases1</id>
+            <id>nexus-releasesi1</id>
             <url>http://13.126.176.194:32081/repository/maven-releases/</url>
         </repository>
     </distributionManagement>
