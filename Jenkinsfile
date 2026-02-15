@@ -10,6 +10,7 @@ pipeline {
         AWS_REGION    = 'ap-south-1'
         ECR_REGISTRY  = '831103387233.dkr.ecr.ap-south-1.amazonaws.com'
         ECR_REPO      = 'java-sonar-demo'
+
         NEXUS_URL     = 'http://13.126.176.194:32081'
         NEXUS_REPO    = 'maven-releases'
         GROUP_ID      = 'com/example'
@@ -37,7 +38,13 @@ pipeline {
             }
         }
 
-        stage('Build & Deploy to Nexus') {
+        stage('Build Artifact') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Push Artifact to Nexus') {
             steps {
                 sh 'mvn deploy -DskipTests'
             }
@@ -71,7 +78,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Docker Tag & Push to ECR') {
             steps {
                 script {
@@ -94,11 +101,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ SonarQube + Nexus + Docker + ECR pipeline SUCCESSFUL!'
+            echo '✅ Artifact build → Nexus publish → Docker → ECR completed successfully!'
         }
         failure {
             echo '❌ Pipeline failed. Check logs.'
         }
     }
 }
-
